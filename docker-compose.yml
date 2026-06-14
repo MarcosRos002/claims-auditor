@@ -1,0 +1,40 @@
+# Veritas (claims-auditor) — local dev stack.
+# `db` is real (pgvector-enabled Postgres). `app` is a Phase-0 stub.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: veritas
+      POSTGRES_PASSWORD: veritas
+      POSTGRES_DB: veritas
+    ports:
+      - "5432:5432"
+    volumes:
+      - veritas_pgdata:/var/lib/postgresql/data
+      # On first boot, enable the vector extension. Migrations live in a later phase.
+      - ./scripts/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U veritas -d veritas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # STUB: the application image is not built yet (Phase 0). Wired here so the
+  # topology + dependency on the DB is documented and ready to fill in.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile        # TODO: add Dockerfile in the deploy phase
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    profiles:
+      - app                          # not started by default; `docker compose --profile app up`
+    command: ["uvicorn", "claims_auditor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  veritas_pgdata:
