@@ -61,6 +61,7 @@ hybrid RAG. Guardrails: PII redaction, prompt-injection defense, read-only DB.
   `ASRTranscriber`, `Classifier`), not concrete classes.
 - **Python tooling:** `ruff` (lint + format), `pytest` (+`pytest-asyncio`).
   Config is in `pyproject.toml`. First-party import root is `claims_auditor`.
+- **Package manager (JS/Node tooling): pnpm only — never use npm or npx.**
 - **Layout:** `src/` layout; `src/claims_auditor/<area>/`. One module = one
   responsibility = one `docs/modules/*.md` spec.
 - **Synthetic data only.** Never introduce real PHI. Redaction is enforced anyway.
