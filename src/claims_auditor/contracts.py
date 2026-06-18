@@ -38,6 +38,21 @@ class Severity(str, Enum):
     HIGH = "high"
 
 
+class FaultType(str, Enum):
+    """Taxonomy of billing inconsistencies — the shared vocabulary between the
+    synthetic data generator (which injects them as ground truth), the rules
+    engine / classifier (which detect them), and eval (which matches the two).
+
+    Single-claim detectable faults (no cross-claim history needed). Expand
+    deliberately as the rules engine grows.
+    """
+
+    CPT_ICD_MISMATCH = "cpt_icd_mismatch"  # procedure not supported by any listed diagnosis
+    UNIT_EXCESS = "unit_excess"  # units exceed the plausible max for the CPT
+    DUPLICATE_LINE = "duplicate_line"  # identical billed line appears more than once
+    UPCODING = "upcoding"  # higher-complexity code than the diagnosis supports
+
+
 class ClaimLine(BaseModel):
     """A single billed line item within a claim."""
 
@@ -140,6 +155,7 @@ class Classifier(Protocol):
 __all__ = [
     # Domain models (owned here)
     "Severity",
+    "FaultType",
     "ClaimLine",
     "Claim",
     "RetrievedChunk",

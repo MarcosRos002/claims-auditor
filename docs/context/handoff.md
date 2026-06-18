@@ -14,7 +14,12 @@ below); foundational layer (synthetic data + harness) is the next task.
   general). Pinned by `tests/test_trace_event_contract.py` (asserts identity with
   the canonical class + that its validators are enforced). See
   `docs/contracts/trace_event.md`.
-- **Green baseline extended:** 9 tests pass; `ruff check` clean.
+- **Synthetic data generator built** (`data/synthetic.py`). Returns
+  `LabeledClaim` (claim + ground-truth `InjectedFault`s), deterministic by seed,
+  covering 4 fault types (`CPT_ICD_MISMATCH`, `UNIT_EXCESS`, `DUPLICATE_LINE`,
+  `UPCODING`). `FaultType` added to `contracts` (shared with rules/eval). Pinned
+  by `tests/test_synthetic_data.py`. See `docs/modules/data.md`.
+- **Green baseline extended:** 17 tests pass; `ruff check` clean.
 - **Dev env note:** a local venv (`.venv`, gitignored) was created with
   `--system-site-packages` + `pip install -e ../agent-lens --no-deps` for the
   cross-repo import. A full `make install` (once heavy deps are wanted) installs
@@ -49,10 +54,10 @@ What is **NOT** done: any real feature logic. Every module stub raises
    (`Retriever`/`ASRTranscriber`/`Classifier`) once and **freeze the contracts**
    before parallel work starts.
 2. **Build the foundational layer (Phase 1):**
-   - `data/synthetic.py` — the synthetic claim generator with injected,
-     labeled inconsistencies (gives every other module its test fixtures).
+   - ~~`data/synthetic.py` — synthetic claim generator with labeled
+     inconsistencies.~~ ✅ **Done.**
    - `core/harness/` — the agent runtime (loop, parallel dispatch, retries,
-     structured-output validation, streaming, TraceEvent emission).
+     structured-output validation, streaming, TraceEvent emission). ⬅ **NEXT**
 3. **Open parallel worktrees (Phase 2)** — one Claude Code agent each, per
    `docs/orchestration.md`:
    - `feat/asr`, `feat/rag`, `feat/rules-mcp`, `feat/classification`.
