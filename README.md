@@ -63,17 +63,25 @@ See [`docs/architecture.md`](docs/architecture.md) for the full design.
 | Eval & observability | Emits a canonical **TraceEvent** stream; measured by agent-lens |
 | Production framing | Contract-first design, Docker + CI eval-gates, free-tier deploy |
 
-## Metrics (coming)
+## Metrics
 
-Measured by [agent-lens](https://github.com/MarcosRos002/agent-lens) once the
-pipeline lands. Placeholder — numbers TBD.
+Component metrics land as each layer ships; end-to-end metrics are measured by
+[agent-lens](https://github.com/MarcosRos002/agent-lens).
 
-| Metric | Target / TBD |
+**Rules engine** — deterministic backbone, measured on 1000 synthetic claims
+(50% fault rate, rule-detectable fault types), reproducible via
+`tests/test_rules_engine.py`:
+
+| Metric | Value |
 |---|---|
-| Inconsistency-detection precision | TBD |
-| Inconsistency-detection recall | TBD |
-| Latency P50 (audit) | TBD |
-| Latency P95 (audit) | TBD |
+| Precision | **0.997** |
+| Recall | **1.000** |
+| F1 | **0.999** |
+
+| Metric (pending layers) | Status |
+|---|---|
+| Classifier precision/recall (incl. upcoding) | TBD |
+| Latency P50 / P95 (audit) | TBD |
 | Voice Q&A first-token latency | TBD |
 | Cost per claim (USD) | TBD |
 

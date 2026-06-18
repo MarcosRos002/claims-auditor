@@ -96,6 +96,11 @@ class AuditFinding(BaseModel):
     finding_id: str
     claim_id: str
     severity: Severity
+    category: FaultType | None = Field(
+        None,
+        description="Inconsistency category (links a finding to a FaultType for eval matching).",
+    )
+    line_index: int | None = Field(None, description="Affected claim line, if line-specific.")
     rule_id: str | None = Field(None, description="Rule that fired, if rule-based.")
     why: str = Field(..., description="Explanation of the inconsistency.")
     citations: list[RetrievedChunk] = Field(default_factory=list)

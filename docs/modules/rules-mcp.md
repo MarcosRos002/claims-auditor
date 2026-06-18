@@ -6,11 +6,29 @@ The deterministic **business-rules engine** for medical-billing audit, plus an
 logic is both directly callable (by the agent graph) and agent-callable (via the
 harness).
 
+## Status
+- **`RulesEngine` implemented (Phase 1).** Pinned by `tests/test_rules_engine.py`.
+  Measured on 1000 synthetic claims (50% fault rate): **precision 0.997, recall
+  1.000, F1 0.999** on the rule-detectable fault types.
+- **MCP layer (`mcp.py`) still a stub** — next increment (expose engine + lookups
+  as `parallel_safe` tools the harness can dispatch).
+
+## Scope (what rules detect vs. defer)
+Detect deterministically from structured codes against `reference.catalog`:
+`CPT_ICD_MISMATCH` (HIGH), `UNIT_EXCESS` (MEDIUM), `DUPLICATE_LINE` (MEDIUM).
+**Deferred to the LLM classifier:** `UPCODING` and anything needing clinical
+context — codes alone can't justify it. Findings carry `category` (a `FaultType`)
+so eval matches them to injected ground truth.
+
 ## Public interface
 - `modules/rules/engine.py:RulesEngine.evaluate(claim) -> list[AuditFinding]` —
-  deterministic checks (CPT/ICD-10 compatibility, units sanity, frequency limits, …).
-- `modules/rules/mcp.py:tool_specs() -> list[ToolSpec]` — advertised tools.
-- `modules/rules/mcp.py:serve()` — start the MCP server.
+  deterministic checks; each finding tagged with `category`, `rule_id`, `severity`,
+  `line_index`. Unknown codes yield an INFO finding (never an exception).
+- `modules/rules/mcp.py:tool_specs() -> list[ToolSpec]` — advertised tools. *(stub)*
+- `modules/rules/mcp.py:serve()` — start the MCP server. *(stub)*
+
+The reference catalog lives in `reference/catalog.py` (shared with `data/` — one
+source of truth so ground truth and detection cannot diverge).
 
 Planned MCP tools: `evaluate_rules(claim)`, `lookup_icd10(code)`,
 `lookup_cpt(code)`, `check_cpt_icd_compatibility(cpt, icd10)` — all read-only and

@@ -12,9 +12,8 @@ Design:
 - Everything is **deterministic for a given seed** so fixtures and eval are
   reproducible (``random.Random(seed)``, never the global RNG).
 
-The catalog below is small and hand-curated. The codes use real-world *formats*
-(e.g. CPT ``99213``, ICD-10 ``E11.9``) with plausible support relationships, but
-the data and pairings are synthetic teaching fixtures — not clinical guidance.
+The ICD-10/CPT catalog is the shared ``reference.catalog`` (same source of truth
+the rules engine checks against, so ground truth and detection cannot diverge).
 
 See ``docs/modules/data.md``.
 """
@@ -26,69 +25,12 @@ import random
 from pydantic import BaseModel, Field
 
 from claims_auditor.contracts import Claim, ClaimLine, FaultType
-
-# ---------------------------------------------------------------------------
-# Synthetic ICD-10 / CPT catalog (formats are real; pairings are teaching data)
-# ---------------------------------------------------------------------------
-ICD10: dict[str, str] = {
-    "E11.9": "Type 2 diabetes mellitus without complications",
-    "I10": "Essential (primary) hypertension",
-    "J06.9": "Acute upper respiratory infection, unspecified",
-    "M54.5": "Low back pain",
-    "I48.91": "Unspecified atrial fibrillation",
-    "R07.9": "Chest pain, unspecified",
-    "J18.9": "Pneumonia, unspecified organism",
-    "R05.9": "Cough, unspecified",
-    "N18.3": "Chronic kidney disease, stage 3",
-    "R73.09": "Other abnormal glucose",
-    "Z00.00": "General adult medical exam without abnormal findings",
-}
-
-
-class _CptInfo(BaseModel):
-    desc: str
-    max_units: int
-    supports: frozenset[str]  # ICD-10 codes that justify this procedure
-    upcode_of: str | None = None  # base CPT this one over-codes, if any
-
-
-CPT: dict[str, _CptInfo] = {
-    "99213": _CptInfo(
-        desc="Office/outpatient visit, established, low complexity",
-        max_units=1,
-        supports=frozenset({"E11.9", "I10", "J06.9", "M54.5"}),
-    ),
-    "99214": _CptInfo(
-        desc="Office/outpatient visit, established, moderate complexity",
-        max_units=1,
-        supports=frozenset({"E11.9", "I10", "J06.9", "M54.5"}),
-        upcode_of="99213",
-    ),
-    "93000": _CptInfo(
-        desc="Electrocardiogram, complete",
-        max_units=1,
-        supports=frozenset({"I10", "I48.91", "R07.9"}),
-    ),
-    "71046": _CptInfo(
-        desc="Radiologic exam, chest, 2 views",
-        max_units=1,
-        supports=frozenset({"J18.9", "R05.9", "J06.9"}),
-    ),
-    "80053": _CptInfo(
-        desc="Comprehensive metabolic panel",
-        max_units=3,
-        supports=frozenset({"E11.9", "N18.3", "R73.09"}),
-    ),
-    "99396": _CptInfo(
-        desc="Preventive visit, established, 40-64 years",
-        max_units=1,
-        supports=frozenset({"Z00.00"}),
-    ),
-}
-
-# CPTs that are not a complexity up-code of something else (safe for clean lines).
-_BASE_CPTS: list[str] = sorted(c for c, info in CPT.items() if info.upcode_of is None)
-_UPCODE_CPTS: list[str] = sorted(c for c, info in CPT.items() if info.upcode_of is not None)
+from claims_auditor.reference.catalog import (
+    BASE_CPTS,
+    CPT,
+    ICD10,
+    UPCODE_CPTS,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +58,7 @@ class LabeledClaim(BaseModel):
 # ---------------------------------------------------------------------------
 def _clean_line(rng: random.Random) -> ClaimLine:
     """Build a clean, internally-consistent billed line."""
-    cpt = rng.choice(_BASE_CPTS)
+    cpt = rng.choice(BASE_CPTS)
     supported = sorted(CPT[cpt].supports)
     n_dx = rng.randint(1, min(2, len(supported)))
     icd = rng.sample(supported, n_dx)
@@ -162,7 +104,7 @@ def _inject(rng: random.Random, lines: list[ClaimLine], fault_type: FaultType) -
         )
 
     if fault_type is FaultType.UPCODING:
-        upcode = rng.choice(_UPCODE_CPTS)
+        upcode = rng.choice(UPCODE_CPTS)
         base = CPT[upcode].upcode_of
         assert base is not None
         # A diagnosis that justifies the base code is used to bill the up-code.
@@ -192,7 +134,13 @@ def generate_claim(
     """
     rng = random.Random(seed)
     n_lines = rng.randint(1, 3)
-    lines = [_clean_line(rng) for _ in range(n_lines)]
+    # Build DISTINCT clean lines so a clean claim never has an accidental
+    # duplicate (which would be an unlabeled DUPLICATE_LINE and corrupt eval).
+    lines: list[ClaimLine] = []
+    while len(lines) < n_lines:
+        candidate = _clean_line(rng)
+        if candidate not in lines:
+            lines.append(candidate)
 
     faults: list[InjectedFault] = []
     if inject_inconsistency or fault_type is not None:

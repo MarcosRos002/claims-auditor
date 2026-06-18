@@ -2,10 +2,17 @@
 
 ## Current state
 
-**Phase 1 — foundational layer COMPLETE.** `TraceEvent` contract reconciled,
-synthetic data generator built, and the agentic harness built. The repo is ready
-for the **parallel fan-out** (asr / rag / rules+mcp / classification) via
-worktrees — each leaf codes against `contracts` + `data` fixtures and the harness.
+**Phase 1 — foundational layer COMPLETE + first leaf (rules engine) done.**
+`TraceEvent` contract reconciled, synthetic data generator built, agentic harness
+built, shared `reference/catalog.py` extracted, and the **rules engine** detects
+the 3 deterministic fault types at **precision 0.997 / recall 1.000** on 1000
+synthetic claims (`tests/test_rules_engine.py`). `AuditFinding` gained
+`category` + `line_index` for eval matching. 34 tests pass.
+
+Remaining leaves for the **parallel fan-out** (worktrees): `modules/rules/mcp.py`
+(expose the engine as MCP tools), `classification` (LLM two-pass, incl. UPCODING),
+`asr`, `rag` (needs Postgres/pgvector). Each codes against `contracts` + `data`
+fixtures + the harness.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;
