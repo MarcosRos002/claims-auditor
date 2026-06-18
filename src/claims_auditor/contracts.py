@@ -6,9 +6,10 @@ minimal in Phase 0 — the authoritative, annotated spec lives in
 so it can be imported by every other module without cycles.
 
 The ``TraceEvent`` schema is OWNED BY agent-lens (the sibling eval/observability
-repo). Veritas *emits* events that conform to it; the canonical definition lives
-there. The stub below is a local mirror for typing only — do not let it drift
-from agent-lens. See ``docs/contracts/trace_event.md``.
+repo). Veritas *emits* events that conform to it, so we import the canonical
+schema directly from ``agent_lens.schema`` and re-export it here. There is no
+local mirror — drift is structurally impossible. See
+``docs/contracts/trace_event.md``.
 """
 
 from __future__ import annotations
@@ -16,6 +17,14 @@ from __future__ import annotations
 from enum import Enum
 from typing import Protocol, runtime_checkable
 
+from agent_lens.schema import (
+    ErrorInfo,
+    StepKind,
+    StepStatus,
+    TokenUsage,
+    Trace,
+    TraceEvent,
+)
 from pydantic import BaseModel, Field
 
 
@@ -97,21 +106,11 @@ class TranscriptSegment(BaseModel):
     is_final: bool = False
 
 
-class TraceEvent(BaseModel):
-    """LOCAL MIRROR of the agent-lens canonical TraceEvent (see module docstring).
-
-    agent-lens owns the schema; Veritas emits conforming events. Treat this as a
-    typing convenience, not the source of truth.
-    """
-
-    trace_id: str
-    span_id: str
-    parent_span_id: str | None = None
-    name: str
-    kind: str = Field(..., description="e.g. 'llm', 'tool', 'retrieval', 'asr'.")
-    start_ts: float
-    end_ts: float | None = None
-    attributes: dict = Field(default_factory=dict)
+# NOTE: ``TraceEvent``, ``Trace``, ``StepKind``, ``StepStatus``, ``TokenUsage`` and
+# ``ErrorInfo`` are imported from agent-lens above and re-exported via ``__all__``.
+# ASR transcription steps map onto the canonical schema as ``kind=StepKind.TOOL``
+# with ``tool_name="asr.transcribe"`` and ``metadata={"modality": "audio"}`` —
+# the canonical enum stays general so agent-lens can measure any agent.
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +127,7 @@ class Retriever(Protocol):
 class ASRTranscriber(Protocol):
     """Streaming audio -> transcript segments."""
 
-    def transcribe_stream(self, audio: bytes) -> "list[TranscriptSegment]": ...
+    def transcribe_stream(self, audio: bytes) -> list[TranscriptSegment]: ...
 
 
 @runtime_checkable
@@ -139,6 +138,7 @@ class Classifier(Protocol):
 
 
 __all__ = [
+    # Domain models (owned here)
     "Severity",
     "ClaimLine",
     "Claim",
@@ -146,7 +146,14 @@ __all__ = [
     "AuditFinding",
     "ToolSpec",
     "TranscriptSegment",
+    # Trace wire-format (owned by agent-lens, re-exported)
     "TraceEvent",
+    "Trace",
+    "StepKind",
+    "StepStatus",
+    "TokenUsage",
+    "ErrorInfo",
+    # Protocols (the seams modules implement)
     "Retriever",
     "ASRTranscriber",
     "Classifier",

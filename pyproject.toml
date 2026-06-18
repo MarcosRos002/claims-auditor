@@ -20,6 +20,8 @@ keywords = [
 # NOTE (Phase 0): dependencies are declared for context-readiness. They are
 # intentionally unpinned beyond lower bounds — a future phase will lock them.
 dependencies = [
+    # Canonical TraceEvent wire-format — single source of truth (no local mirror).
+    "agent-lens @ git+https://github.com/MarcosRos002/agent-lens.git",
     "langgraph>=0.2",
     "anthropic>=0.40",          # Claude Agent SDK / Messages API (Haiku/Sonnet cost routing)
     "fastapi>=0.115",
@@ -71,7 +73,8 @@ select = [
     "SIM", # flake8-simplify
 ]
 ignore = [
-    "E501", # line length handled by formatter
+    "E501",  # line length handled by formatter
+    "UP042", # keep `str, Enum` (not StrEnum) for clean JSON serialization — matches agent-lens
 ]
 
 [tool.ruff.lint.isort]

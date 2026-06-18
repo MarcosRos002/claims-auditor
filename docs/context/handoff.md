@@ -2,6 +2,24 @@
 
 ## Current state
 
+**Phase 1 in progress.** The `TraceEvent` cross-repo contract is reconciled (see
+below); foundational layer (synthetic data + harness) is the next task.
+
+### Done in Phase 1 so far
+- **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;
+  `contracts.py` now imports the canonical `TraceEvent`/`Trace`/`StepKind`/
+  `StepStatus`/`TokenUsage`/`ErrorInfo` from `agent_lens.schema` and re-exports
+  them. `agent-lens` is declared as a dependency (`git+https://...`). ASR steps
+  map to `kind=TOOL` + `metadata={"modality":"audio"}` (canonical enum stays
+  general). Pinned by `tests/test_trace_event_contract.py` (asserts identity with
+  the canonical class + that its validators are enforced). See
+  `docs/contracts/trace_event.md`.
+- **Green baseline extended:** 9 tests pass; `ruff check` clean.
+- **Dev env note:** a local venv (`.venv`, gitignored) was created with
+  `--system-site-packages` + `pip install -e ../agent-lens --no-deps` for the
+  cross-repo import. A full `make install` (once heavy deps are wanted) installs
+  `agent-lens` from git per `pyproject.toml`.
+
 **Phase 0 bootstrap complete.** The repo is context-ready: a fresh Claude Code
 session can open it and have full context to build it.
 
@@ -26,9 +44,10 @@ What is **NOT** done: any real feature logic. Every module stub raises
 
 ## Next steps (in order)
 
-1. **Write the contracts fully** in `docs/contracts/` and finalize
-   `contracts.py`. Pull the canonical `TraceEvent` from agent-lens and reconcile
-   the local mirror. **Freeze the contracts** before parallel work starts.
+1. ~~Pull the canonical `TraceEvent` from agent-lens and reconcile the local
+   mirror.~~ ✅ **Done.** Remaining: review the domain Protocols
+   (`Retriever`/`ASRTranscriber`/`Classifier`) once and **freeze the contracts**
+   before parallel work starts.
 2. **Build the foundational layer (Phase 1):**
    - `data/synthetic.py` — the synthetic claim generator with injected,
      labeled inconsistencies (gives every other module its test fixtures).
