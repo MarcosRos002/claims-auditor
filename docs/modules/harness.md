@@ -7,14 +7,29 @@ context, validates structured output, handles retries and error recovery,
 streams output, and supports barge-in for the voice path. It is **model-agnostic**;
 the model for any given call is chosen by `routing/`.
 
-## Public interface
-`core/harness/runtime.py:Harness`:
-- `run(goal) -> AsyncIterator[TraceEvent]` — drive the loop to completion,
-  streaming `TraceEvent`s (see `docs/contracts/trace_event.md`).
-- `dispatch_parallel(calls) -> list[dict]` — run `ToolSpec.parallel_safe` calls
-  concurrently; serialize the rest.
+## Status: implemented (Phase 1)
+Core runtime built and pinned by `tests/test_harness.py` (10 tests). Voice
+streaming / barge-in remain Phase-4 upper-layer hooks.
 
-Consumes: `ToolSpec`, emits `TraceEvent` (both in `contracts.py`).
+## Public interface
+`core/harness/runtime.py`:
+- `Harness(*, model, tools=None, max_turns=8, max_retries=2, backoff_base_s=0.05, sleep=None)`
+  — **everything is injected** (model client + tools), so the harness runs fully
+  offline. Cost routing / guardrails arrive as a routing-aware `model`.
+- `run(goal, *, session_id=None) -> AsyncIterator[TraceEvent]` — bounded agent
+  loop; emits a `TraceEvent` per step; on `max_turns` exhaustion emits a single
+  degraded `final` event instead of spinning forever.
+- `dispatch_parallel(calls) -> list[dict]` — run `ToolSpec.parallel_safe` calls
+  concurrently; serialize the rest; results keep call order. Each call is
+  `{"name", "arguments"}`; each result is `{"name", "ok", "result"|"error"}`.
+- `extract(prompt, schema) -> schema` — structured-output discipline: validate the
+  model reply against a pydantic schema, re-prompt once, else raise `ValueError`.
+- `Tool` = `ToolSpec` + a (sync or async) `handler`. `ModelClient` Protocol =
+  `step(goal, observations) -> ModelDecision` + `complete(prompt) -> str`.
+  `ModelDecision` = `{tool_calls: [...], final_text: str | None}`.
+
+Consumes: `ToolSpec`, emits `TraceEvent` (both in `contracts.py`). Retries set
+`metadata.attempts`; failures emit `status=ERROR` with an `ErrorInfo`.
 
 ## Dependencies
 - `contracts` only (plus the Claude Agent SDK / anthropic at implementation time).

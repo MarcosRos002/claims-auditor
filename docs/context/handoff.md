@@ -2,8 +2,10 @@
 
 ## Current state
 
-**Phase 1 in progress.** The `TraceEvent` cross-repo contract is reconciled (see
-below); foundational layer (synthetic data + harness) is the next task.
+**Phase 1 — foundational layer COMPLETE.** `TraceEvent` contract reconciled,
+synthetic data generator built, and the agentic harness built. The repo is ready
+for the **parallel fan-out** (asr / rag / rules+mcp / classification) via
+worktrees — each leaf codes against `contracts` + `data` fixtures and the harness.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;
@@ -56,8 +58,9 @@ What is **NOT** done: any real feature logic. Every module stub raises
 2. **Build the foundational layer (Phase 1):**
    - ~~`data/synthetic.py` — synthetic claim generator with labeled
      inconsistencies.~~ ✅ **Done.**
-   - `core/harness/` — the agent runtime (loop, parallel dispatch, retries,
-     structured-output validation, streaming, TraceEvent emission). ⬅ **NEXT**
+   - ~~`core/harness/` — the agent runtime (loop, parallel dispatch, retries,
+     structured-output validation, TraceEvent emission).~~ ✅ **Done**
+     (`tests/test_harness.py`). Voice streaming/barge-in deferred to Phase 4.
 3. **Open parallel worktrees (Phase 2)** — one Claude Code agent each, per
    `docs/orchestration.md`:
    - `feat/asr`, `feat/rag`, `feat/rules-mcp`, `feat/classification`.
