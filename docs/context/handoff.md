@@ -20,11 +20,19 @@ confidence); injected model (offline-testable); exposes `last_pass_used` /
 `last_escalated` for cost metrics. Covers UPCODING (out of rules' reach). Pinned
 by `tests/test_classification.py`. 47 tests pass.
 
-Remaining leaves: `asr` (fake transcriber), `rag` (needs Postgres/pgvector). The
-next high-value step is `agent/graph.py` — wire harness + rules MCP tools +
-classifier into the **end-to-end Capa 1 MVP** (text claim → audit → findings +
-explanation). A real `ClassifierModel`/`ModelClient` adapter (Anthropic
-Haiku/Sonnet, with demo-mode + OpenRouter free + BYOK) is also pending.
+**agent orchestrator done = Capa 1 MVP** (`agent/graph.py`): `AuditOrchestrator`
+runs rules + classifier, merges/dedupes findings, returns `AuditReport` +
+per-stage agent-lens `Trace`; degrades gracefully on stage failure. Pinned by
+`tests/test_agent_orchestrator.py`. **54 tests pass.** `AuditReport` added to
+contracts.
+
+**The text-claim audit now runs end-to-end.** Next high-value options:
+1. **Real model adapter** (`ClassifierModel`/`ModelClient` over Anthropic
+   Haiku/Sonnet) with demo-mode + OpenRouter-free + BYOK — turns the offline MVP
+   into a live one.
+2. **`rag`** (needs Postgres/pgvector) — real citations.
+3. **`asr`** (Capa 2, multimodal) — audio → claim.
+4. Start building **agent-lens** itself (it now has a real Trace to consume).
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

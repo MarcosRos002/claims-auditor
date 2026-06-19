@@ -106,6 +106,15 @@ class AuditFinding(BaseModel):
     citations: list[RetrievedChunk] = Field(default_factory=list)
 
 
+class AuditReport(BaseModel):
+    """The top-level result of auditing one claim — the system's primary output."""
+
+    claim_id: str
+    flagged: bool = Field(..., description="True if any inconsistency was found.")
+    findings: list[AuditFinding] = Field(default_factory=list)
+    summary: str = Field("", description="Human-readable one-line summary.")
+
+
 class ToolSpec(BaseModel):
     """Description of a tool the harness/agent can dispatch (incl. MCP tools)."""
 
@@ -165,6 +174,7 @@ __all__ = [
     "Claim",
     "RetrievedChunk",
     "AuditFinding",
+    "AuditReport",
     "ToolSpec",
     "TranscriptSegment",
     # Trace wire-format (owned by agent-lens, re-exported)
