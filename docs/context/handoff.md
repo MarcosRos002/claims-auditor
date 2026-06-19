@@ -14,11 +14,17 @@ read-only tools (`evaluate_rules`, `lookup_icd10`, `lookup_cpt`,
 `check_cpt_icd_compatibility`); same tools dispatchable by the harness via
 `as_harness_tools()`. Pinned by `tests/test_rules_mcp.py`. 41 tests pass.
 
-Remaining leaves for the **parallel fan-out** (worktrees): `classification`
-(LLM two-pass, incl. UPCODING — testable with a fake model), `asr` (fake
-transcriber), `rag` (needs Postgres/pgvector). Then `agent/graph.py` wires the
-harness + tools + classifier into the end-to-end Capa 1 MVP. Each leaf codes
-against `contracts` + `data` fixtures + the harness.
+**classification done** (`modules/classification/classifier.py`): two-pass
+cost-routing `TwoPassClassifier` (cheap Pass 1 → escalate to Pass 2 on low
+confidence); injected model (offline-testable); exposes `last_pass_used` /
+`last_escalated` for cost metrics. Covers UPCODING (out of rules' reach). Pinned
+by `tests/test_classification.py`. 47 tests pass.
+
+Remaining leaves: `asr` (fake transcriber), `rag` (needs Postgres/pgvector). The
+next high-value step is `agent/graph.py` — wire harness + rules MCP tools +
+classifier into the **end-to-end Capa 1 MVP** (text claim → audit → findings +
+explanation). A real `ClassifierModel`/`ModelClient` adapter (Anthropic
+Haiku/Sonnet, with demo-mode + OpenRouter free + BYOK) is also pending.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

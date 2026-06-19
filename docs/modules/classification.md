@@ -7,12 +7,24 @@ model from fine-tune-lab); low-confidence cases **escalate** to Pass 2 (Claude
 Sonnet `claude-sonnet-4-6`). Covers the judgment the deterministic rules can't
 express.
 
-## Public interface
-`modules/classification/classifier.py:TwoPassClassifier` implements `Classifier`:
-- `classify(claim, context) -> list[AuditFinding]`
+## Status: implemented (Phase 1)
+Pinned by `tests/test_classification.py`. The model is **injected** so it runs
+offline; `last_pass_used` / `last_escalated` expose the routing decision for
+agent-lens cost metrics. Real model adapter (Anthropic Haiku/Sonnet) is wired in
+the agent/routing layer.
 
-`context` is the `RetrievedChunk[]` evidence from `rag`; findings carry those
-chunks as citations.
+## Public interface
+`modules/classification/classifier.py`:
+- `TwoPassClassifier(model, *, confidence_threshold=0.75)` implements `Classifier`:
+  `classify(claim, context) -> list[AuditFinding]`.
+- Injected `ClassifierModel` Protocol: `classify(claim, context, *, tier) ->
+  ClassificationResult` where `tier ∈ {"cheap","escalated"}`.
+- `CandidateFinding` (category, line_index, confidence, why) / `ClassificationResult`.
+
+Cost routing: Pass 1 (cheap) runs first; if any candidate is below threshold the
+whole claim escalates to Pass 2 (authoritative); only candidates ≥ threshold
+become findings. `context` is the `RetrievedChunk[]` evidence from `rag`; findings
+carry those chunks as citations.
 
 ## Dependencies
 - `contracts` at the seam; the cost decision comes from `routing/` (injected).
