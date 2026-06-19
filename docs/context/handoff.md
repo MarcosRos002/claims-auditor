@@ -9,10 +9,16 @@ the 3 deterministic fault types at **precision 0.997 / recall 1.000** on 1000
 synthetic claims (`tests/test_rules_engine.py`). `AuditFinding` gained
 `category` + `line_index` for eval matching. 34 tests pass.
 
-Remaining leaves for the **parallel fan-out** (worktrees): `modules/rules/mcp.py`
-(expose the engine as MCP tools), `classification` (LLM two-pass, incl. UPCODING),
-`asr`, `rag` (needs Postgres/pgvector). Each codes against `contracts` + `data`
-fixtures + the harness.
+**rules MCP layer done** (`modules/rules/mcp.py`): real FastMCP server with 4
+read-only tools (`evaluate_rules`, `lookup_icd10`, `lookup_cpt`,
+`check_cpt_icd_compatibility`); same tools dispatchable by the harness via
+`as_harness_tools()`. Pinned by `tests/test_rules_mcp.py`. 41 tests pass.
+
+Remaining leaves for the **parallel fan-out** (worktrees): `classification`
+(LLM two-pass, incl. UPCODING — testable with a fake model), `asr` (fake
+transcriber), `rag` (needs Postgres/pgvector). Then `agent/graph.py` wires the
+harness + tools + classifier into the end-to-end Capa 1 MVP. Each leaf codes
+against `contracts` + `data` fixtures + the harness.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

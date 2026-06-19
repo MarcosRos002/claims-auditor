@@ -24,6 +24,7 @@ dependencies = [
     "agent-lens @ git+https://github.com/MarcosRos002/agent-lens.git",
     "langgraph>=0.2",
     "anthropic>=0.40",          # Claude Agent SDK / Messages API (Haiku/Sonnet cost routing)
+    "mcp>=1.2",                 # Model Context Protocol SDK (FastMCP server for the rules tools)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",

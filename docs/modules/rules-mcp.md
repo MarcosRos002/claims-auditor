@@ -10,8 +10,10 @@ harness).
 - **`RulesEngine` implemented (Phase 1).** Pinned by `tests/test_rules_engine.py`.
   Measured on 1000 synthetic claims (50% fault rate): **precision 0.997, recall
   1.000, F1 0.999** on the rule-detectable fault types.
-- **MCP layer (`mcp.py`) still a stub** — next increment (expose engine + lookups
-  as `parallel_safe` tools the harness can dispatch).
+- **MCP layer implemented (Phase 1).** Pinned by `tests/test_rules_mcp.py`. Real
+  FastMCP server (`build_server`/`serve`) advertising 4 read-only tools; same tools
+  bind into our harness via `as_harness_tools()`. One source of truth: the pure
+  handler functions drive specs + harness tools + the MCP server.
 
 ## Scope (what rules detect vs. defer)
 Detect deterministically from structured codes against `reference.catalog`:
@@ -24,8 +26,10 @@ so eval matches them to injected ground truth.
 - `modules/rules/engine.py:RulesEngine.evaluate(claim) -> list[AuditFinding]` —
   deterministic checks; each finding tagged with `category`, `rule_id`, `severity`,
   `line_index`. Unknown codes yield an INFO finding (never an exception).
-- `modules/rules/mcp.py:tool_specs() -> list[ToolSpec]` — advertised tools. *(stub)*
-- `modules/rules/mcp.py:serve()` — start the MCP server. *(stub)*
+- `modules/rules/mcp.py` — pure handlers (`evaluate_rules`, `lookup_icd10`,
+  `lookup_cpt`, `check_cpt_icd_compatibility`); `tool_specs()` (advertised
+  ToolSpecs); `as_harness_tools()` (bound `Tool`s for our harness);
+  `build_server()` (a real FastMCP server); `serve()` (stdio transport).
 
 The reference catalog lives in `reference/catalog.py` (shared with `data/` — one
 source of truth so ground truth and detection cannot diverge).
