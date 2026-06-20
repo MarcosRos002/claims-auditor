@@ -31,6 +31,12 @@ imported lazily):
   for `DenseIndex` via `HybridRetriever(docs, dense_index=...)`.
 - `SentenceTransformerEmbedder(model_name="sentence-transformers/all-MiniLM-L6-v2")`
   — real 384-d sentence embeddings (CPU, free, no API key).
+- `CrossEncoderReranker(model=None, *, model_name="cross-encoder/ms-marco-MiniLM-L-6-v2")`
+  — the precision pass: scores each (query, doc) **pair jointly** (unlike the
+  bi-encoder), reordering only the top-N fused candidates. Injected scorer
+  (`predict(pairs)->scores`) for offline tests; real CrossEncoder by default.
+  Verified: for "chest imaging for pneumonia" it promotes `cpt:71046` (Radiologic
+  exam, chest) above "chest pain" — precision the bi-encoder alone misses.
 
 Run it online:
 ```bash

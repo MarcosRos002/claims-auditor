@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 from collections.abc import Sequence
 
+from claims_auditor.contracts import RetrievedChunk
 from claims_auditor.modules.rag.retriever import Doc
 
 DEFAULT_DSN = os.environ.get("DATABASE_URL", "postgresql://veritas:veritas@localhost:5432/veritas")
@@ -35,6 +36,37 @@ class SentenceTransformerEmbedder:
 
     def __call__(self, text: str) -> Sequence[float]:
         return self._model.encode(text, normalize_embeddings=True).tolist()
+
+
+class CrossEncoderReranker:
+    """Cross-encoder reranker — the precision pass over fused candidates.
+
+    Unlike the bi-encoder dense index (which embeds query and doc separately), a
+    cross-encoder scores the (query, doc) **pair jointly**, so it is far more
+    precise — but too slow to run over the whole corpus. It runs only over the
+    top-N fused candidates. Satisfies the ``Reranker`` seam.
+
+    The scoring model is injected (anything with ``predict(pairs) -> scores``); by
+    default a real sentence-transformers ``CrossEncoder`` is built.
+    """
+
+    def __init__(
+        self, model=None, *, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    ) -> None:
+        if model is None:
+            from sentence_transformers import CrossEncoder
+
+            model = CrossEncoder(model_name)
+        self._model = model
+
+    def rerank(self, query: str, candidates: list[RetrievedChunk]) -> list[RetrievedChunk]:
+        if not candidates:
+            return []
+        scores = self._model.predict([(query, c.text) for c in candidates])
+        ranked = sorted(
+            zip(candidates, scores, strict=True), key=lambda cs: float(cs[1]), reverse=True
+        )
+        return [c.model_copy(update={"score": float(s)}) for c, s in ranked]
 
 
 class PgVectorIndex:

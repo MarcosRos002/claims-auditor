@@ -49,11 +49,15 @@ catalog chunks for its line codes. Verified end-to-end with the real pgvector +
 sentence-transformers retriever — a rule finding cites the official ICD-10/CPT
 descriptions pulled from the DB. **67 tests pass.**
 
+**Cross-encoder reranker done** (`CrossEncoderReranker` in `modules/rag/backends.py`):
+the precision pass over fused candidates (scores query/doc pairs jointly), injected
+scorer for offline tests, real sentence-transformers CrossEncoder by default.
+Verified it improves top-k ordering with the real model. **70 tests pass.**
+
 Next high-value options:
 1. **`asr`** (Capa 2, multimodal) — audio → claim (faster-whisper, online).
 2. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
-   — the user wants this LAST, after each part is validated online. Also enables a
-   real cross-encoder reranker for `rag`.
+   — the user wants this LAST, after each part is validated online.
 3. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
 
 ### Done in Phase 1 so far

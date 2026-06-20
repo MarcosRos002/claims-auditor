@@ -18,7 +18,7 @@ import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from claims_auditor.contracts import RetrievedChunk
 from claims_auditor.reference.catalog import CPT, ICD10
@@ -47,6 +47,7 @@ class RankedIndex(Protocol):
     def search(self, query: str, k: int) -> list[tuple[str, float]]: ...
 
 
+@runtime_checkable
 class Reranker(Protocol):
     """Reorders fused candidates for precision (a cross-encoder in production)."""
 
