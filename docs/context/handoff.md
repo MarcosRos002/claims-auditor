@@ -26,13 +26,21 @@ per-stage agent-lens `Trace`; degrades gracefully on stage failure. Pinned by
 `tests/test_agent_orchestrator.py`. **54 tests pass.** `AuditReport` added to
 contracts.
 
-**The text-claim audit now runs end-to-end.** Next high-value options:
+**The text-claim audit now runs end-to-end.**
+
+**rag done (offline)** (`modules/rag/retriever.py`): `HybridRetriever` = BM25
+(`LexicalIndex`) + cosine (`DenseIndex`, injected `Embedder`) → `rrf_fuse` →
+optional `Reranker` → top-k; `from_catalog()` builds over ICD-10/CPT. No DB
+needed — pgvector + sentence-transformers are production swaps. Pinned by
+`tests/test_rag.py`. **63 tests pass.** The orchestrator already accepts a
+`retriever`, so the flagship can now ground findings with real citations.
+
+Next high-value options:
 1. **Real model adapter** (`ClassifierModel`/`ModelClient` over Anthropic
    Haiku/Sonnet) with demo-mode + OpenRouter-free + BYOK — turns the offline MVP
-   into a live one.
-2. **`rag`** (needs Postgres/pgvector) — real citations.
-3. **`asr`** (Capa 2, multimodal) — audio → claim.
-4. Start building **agent-lens** itself (it now has a real Trace to consume).
+   into a live one (also enables a real embedder/reranker for `rag`).
+2. **`asr`** (Capa 2, multimodal) — audio → claim.
+3. Wire the real pgvector `DenseIndex` + sentence-transformers behind the seams.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

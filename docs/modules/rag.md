@@ -5,13 +5,25 @@ Hybrid retrieval over ICD-10/CPT descriptions and policy text — the evidence
 layer that grounds every finding. Dense + sparse candidate generation, fused and
 reranked. **Read-only** DB access.
 
-## Public interface
-`modules/rag/retriever.py:HybridRetriever` implements `Retriever`:
-- `retrieve(query, *, top_k=8) -> list[RetrievedChunk]`
+## Status: implemented (Phase 1, offline)
+Pinned by `tests/test_rag.py`. The fusion + rerank logic and in-memory indexes
+work with **no database** — the demo retrieves over the real ICD-10/CPT catalog
+and shows hybrid surfacing a doc lexical search alone misses. pgvector +
+sentence-transformers are production swaps behind the same seams.
 
-Pipeline: pgvector (dense) + Postgres full-text/BM25 (sparse) → **Reciprocal Rank
-Fusion** → **cross-encoder rerank** → top-k. `RetrievedChunk.score` is the final
-post-rerank score.
+## Public interface
+`modules/rag/retriever.py`:
+- `HybridRetriever(docs, *, embedder, reranker=None, candidate_k=20, top_k=8, rrf_k=60)`
+  implements `Retriever`: `retrieve(query, *, top_k=None) -> list[RetrievedChunk]`.
+- `HybridRetriever.from_catalog(embedder=...)` — build over the shared catalog.
+- `rrf_fuse(rank_lists, *, k=60)` — pure Reciprocal Rank Fusion.
+- `LexicalIndex` (BM25, sparse) / `DenseIndex` (cosine over an injected `Embedder`).
+- `Reranker` Protocol (cross-encoder swap), `Doc` (a retrievable chunk).
+
+Pipeline: dense (semantic) + sparse (BM25) candidates → **RRF** → optional
+**rerank** → top-k. `RetrievedChunk.score` is the fused (post-rerank) score.
+**Production swaps:** `DenseIndex`→pgvector (read-only), `Embedder`/`Reranker`→
+sentence-transformers.
 
 ## Dependencies
 - `contracts` at the seam.
