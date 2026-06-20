@@ -22,8 +22,24 @@ sentence-transformers are production swaps behind the same seams.
 
 Pipeline: dense (semantic) + sparse (BM25) candidates → **RRF** → optional
 **rerank** → top-k. `RetrievedChunk.score` is the fused (post-rerank) score.
-**Production swaps:** `DenseIndex`→pgvector (read-only), `Embedder`/`Reranker`→
-sentence-transformers.
+
+## Real backends (online) — `modules/rag/backends.py`
+The production swaps, behind the same `RankedIndex`/`Embedder` seams (heavy deps
+imported lazily):
+- `PgVectorIndex(docs, embedder, *, dsn, table)` — a Postgres+pgvector ANN index
+  (cosine `<=>`, IVFFlat). Ingests on construction; `search` is read-only. Drop-in
+  for `DenseIndex` via `HybridRetriever(docs, dense_index=...)`.
+- `FastEmbedEmbedder(model_name="BAAI/bge-small-en-v1.5")` — real 384-d sentence
+  embeddings via fastembed (ONNX, CPU, free, no API key).
+
+Run it online:
+```bash
+docker compose up -d db          # Postgres + pgvector (verified: ext vector 0.8.3)
+pip install -e ".[dev,rag]"       # adds fastembed
+pytest tests/test_rag_pgvector.py # online integration tests (auto-skip if no DB)
+```
+Verified: `"high blood pressure"`→I10 hypertension, `"kidney problems"`→N18.3,
+`"sugar in blood"`→R73.09/E11.9 — real semantic retrieval, no shared words.
 
 ## Dependencies
 - `contracts` at the seam.

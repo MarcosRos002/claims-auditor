@@ -42,6 +42,11 @@ dev = [
     "pytest-asyncio>=0.23",
     "ruff>=0.6",
 ]
+# Real RAG backends (pgvector dense index + a free local embedder). psycopg +
+# pgvector are already core deps; this adds the embedding model (ONNX, no GPU).
+rag = [
+    "fastembed>=0.3",
+]
 
 [project.urls]
 Homepage = "https://github.com/MarcosRos002/claims-auditor"

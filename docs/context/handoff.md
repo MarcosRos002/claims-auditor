@@ -35,12 +35,21 @@ needed — pgvector + sentence-transformers are production swaps. Pinned by
 `tests/test_rag.py`. **63 tests pass.** The orchestrator already accepts a
 `retriever`, so the flagship can now ground findings with real citations.
 
+**rag now runs ONLINE** (`modules/rag/backends.py`): `PgVectorIndex` (real
+Postgres+pgvector, cosine `<=>`, IVFFlat) + `FastEmbedEmbedder` (real 384-d ONNX
+embeddings, free) — both drop-in behind the `RankedIndex`/`Embedder` seams.
+`HybridRetriever` now accepts an injected `dense_index`. Online integration tests
+(`tests/test_rag_pgvector.py`) pass against the docker DB (auto-skip if absent).
+Verified real semantic retrieval. **65 tests pass.** Run: `docker compose up -d db`
++ `pip install -e ".[dev,rag]"`.
+
 Next high-value options:
-1. **Real model adapter** (`ClassifierModel`/`ModelClient` over Anthropic
-   Haiku/Sonnet) with demo-mode + OpenRouter-free + BYOK — turns the offline MVP
-   into a live one (also enables a real embedder/reranker for `rag`).
-2. **`asr`** (Capa 2, multimodal) — audio → claim.
-3. Wire the real pgvector `DenseIndex` + sentence-transformers behind the seams.
+1. **`asr`** (Capa 2, multimodal) — audio → claim (can use faster-whisper, online).
+2. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
+   — the user wants this LAST, after each part is validated online. Also enables a
+   real cross-encoder reranker for `rag`.
+3. Wire the orchestrator to use `PgVectorIndex` for real citations end-to-end.
+4. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

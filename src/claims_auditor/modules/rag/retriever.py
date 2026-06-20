@@ -40,6 +40,13 @@ class Doc:
     source: str
 
 
+class RankedIndex(Protocol):
+    """A retrieval backend: rank chunk ids for a query. Implemented by the
+    in-memory ``LexicalIndex``/``DenseIndex`` and the DB-backed ``PgVectorIndex``."""
+
+    def search(self, query: str, k: int) -> list[tuple[str, float]]: ...
+
+
 class Reranker(Protocol):
     """Reorders fused candidates for precision (a cross-encoder in production)."""
 
@@ -132,15 +139,22 @@ class HybridRetriever:
         self,
         docs: list[Doc],
         *,
-        embedder: Embedder,
+        embedder: Embedder | None = None,
+        dense_index: RankedIndex | None = None,
+        lexical_index: RankedIndex | None = None,
         reranker: Reranker | None = None,
         candidate_k: int = 20,
         top_k: int = 8,
         rrf_k: int = 60,
     ) -> None:
         self._docs = {d.chunk_id: d for d in docs}
-        self._lexical = LexicalIndex(docs)
-        self._dense = DenseIndex(docs, embedder)
+        self._lexical = lexical_index or LexicalIndex(docs)
+        if dense_index is not None:
+            self._dense = dense_index  # e.g. a DB-backed PgVectorIndex
+        elif embedder is not None:
+            self._dense = DenseIndex(docs, embedder)
+        else:
+            raise ValueError("HybridRetriever needs either `embedder` or `dense_index`")
         self._reranker = reranker
         self._candidate_k = candidate_k
         self._top_k = top_k
