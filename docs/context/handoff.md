@@ -36,8 +36,8 @@ needed — pgvector + sentence-transformers are production swaps. Pinned by
 `retriever`, so the flagship can now ground findings with real citations.
 
 **rag now runs ONLINE** (`modules/rag/backends.py`): `PgVectorIndex` (real
-Postgres+pgvector, cosine `<=>`, IVFFlat) + `FastEmbedEmbedder` (real 384-d ONNX
-embeddings, free) — both drop-in behind the `RankedIndex`/`Embedder` seams.
+Postgres+pgvector, cosine `<=>`, IVFFlat) + `SentenceTransformerEmbedder` (real
+384-d embeddings, free, CPU) — both drop-in behind the `RankedIndex`/`Embedder` seams.
 `HybridRetriever` now accepts an injected `dense_index`. Online integration tests
 (`tests/test_rag_pgvector.py`) pass against the docker DB (auto-skip if absent).
 Verified real semantic retrieval. **65 tests pass.** Run: `docker compose up -d db`

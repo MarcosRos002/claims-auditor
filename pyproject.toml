@@ -43,9 +43,9 @@ dev = [
     "ruff>=0.6",
 ]
 # Real RAG backends (pgvector dense index + a free local embedder). psycopg +
-# pgvector are already core deps; this adds the embedding model (ONNX, no GPU).
+# pgvector are already core deps; this adds the embedding model.
 rag = [
-    "fastembed>=0.3",
+    "sentence-transformers>=3.0",  # embedder: all-MiniLM-L6-v2, free, CPU
 ]
 
 [project.urls]

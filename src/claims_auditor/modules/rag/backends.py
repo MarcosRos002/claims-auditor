@@ -5,9 +5,9 @@ becomes a Postgres/pgvector ANN index, and the toy embedder becomes a real
 sentence-embedding model. Both satisfy the same seams (``RankedIndex`` /
 ``Embedder``) so ``HybridRetriever`` is unchanged.
 
-Heavy/optional deps (``psycopg``, ``pgvector``, ``fastembed``) are imported
-**lazily** so the offline retriever stays dependency-free. Ingestion writes the
-index; ``search`` is read-only — the contract for the audit path.
+Heavy/optional deps (``psycopg``, ``pgvector``, ``sentence-transformers``) are
+imported **lazily** so the offline retriever stays dependency-free. Ingestion
+writes the index; ``search`` is read-only — the contract for the audit path.
 """
 
 from __future__ import annotations
@@ -20,17 +20,21 @@ from claims_auditor.modules.rag.retriever import Doc
 DEFAULT_DSN = os.environ.get("DATABASE_URL", "postgresql://veritas:veritas@localhost:5432/veritas")
 
 
-class FastEmbedEmbedder:
-    """Real sentence embeddings via fastembed (ONNX, CPU, no API key, free)."""
+class SentenceTransformerEmbedder:
+    """Real sentence embeddings via sentence-transformers (the project default).
 
-    def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5") -> None:
-        from fastembed import TextEmbedding
+    Default ``all-MiniLM-L6-v2`` is 384-d, CPU-friendly, free (no API key). Swap
+    ``model_name`` for a stronger model when quality matters more than speed.
+    """
 
-        self._model = TextEmbedding(model_name)
-        self.dim = len(next(iter(self._model.embed(["probe"]))))
+    def __init__(self, model_name: str = "sentence-transformers/all-MiniLM-L6-v2") -> None:
+        from sentence_transformers import SentenceTransformer
+
+        self._model = SentenceTransformer(model_name)
+        self.dim = self._model.get_sentence_embedding_dimension()
 
     def __call__(self, text: str) -> Sequence[float]:
-        return [float(x) for x in next(iter(self._model.embed([text])))]
+        return self._model.encode(text, normalize_embeddings=True).tolist()
 
 
 class PgVectorIndex:

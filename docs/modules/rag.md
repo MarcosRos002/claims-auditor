@@ -29,13 +29,13 @@ imported lazily):
 - `PgVectorIndex(docs, embedder, *, dsn, table)` — a Postgres+pgvector ANN index
   (cosine `<=>`, IVFFlat). Ingests on construction; `search` is read-only. Drop-in
   for `DenseIndex` via `HybridRetriever(docs, dense_index=...)`.
-- `FastEmbedEmbedder(model_name="BAAI/bge-small-en-v1.5")` — real 384-d sentence
-  embeddings via fastembed (ONNX, CPU, free, no API key).
+- `SentenceTransformerEmbedder(model_name="sentence-transformers/all-MiniLM-L6-v2")`
+  — real 384-d sentence embeddings (CPU, free, no API key).
 
 Run it online:
 ```bash
 docker compose up -d db          # Postgres + pgvector (verified: ext vector 0.8.3)
-pip install -e ".[dev,rag]"       # adds fastembed
+pip install -e ".[dev,rag]"       # adds sentence-transformers
 pytest tests/test_rag_pgvector.py # online integration tests (auto-skip if no DB)
 ```
 Verified: `"high blood pressure"`→I10 hypertension, `"kidney problems"`→N18.3,
