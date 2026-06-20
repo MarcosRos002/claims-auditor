@@ -43,13 +43,18 @@ Postgres+pgvector, cosine `<=>`, IVFFlat) + `SentenceTransformerEmbedder` (real
 Verified real semantic retrieval. **65 tests pass.** Run: `docker compose up -d db`
 + `pip install -e ".[dev,rag]"`.
 
+**Orchestrator now grounds findings with real RAG citations** (`_ground` in
+`agent/graph.py`): when a retriever is injected, each finding is grounded in the
+catalog chunks for its line codes. Verified end-to-end with the real pgvector +
+sentence-transformers retriever — a rule finding cites the official ICD-10/CPT
+descriptions pulled from the DB. **67 tests pass.**
+
 Next high-value options:
-1. **`asr`** (Capa 2, multimodal) — audio → claim (can use faster-whisper, online).
+1. **`asr`** (Capa 2, multimodal) — audio → claim (faster-whisper, online).
 2. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
    — the user wants this LAST, after each part is validated online. Also enables a
    real cross-encoder reranker for `rag`.
-3. Wire the orchestrator to use `PgVectorIndex` for real citations end-to-end.
-4. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
+3. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

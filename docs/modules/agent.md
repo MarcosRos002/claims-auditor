@@ -28,6 +28,12 @@ Reconciliation: findings deduped by `(category, line_index)`; rules win ties, th
 classifier adds what rules can't (e.g. UPCODING). A failing stage degrades (drops
 its findings, records an `error` TraceEvent) instead of aborting.
 
+**Grounding:** when a `retriever` is injected, `_ground` attaches the retrieved
+catalog chunks for a finding's line codes as `citations` — so no inconsistency is
+asserted without cited evidence. Verified end-to-end with the real pgvector +
+sentence-transformers retriever (rule finding cites the official ICD-10/CPT
+descriptions pulled from the DB).
+
 Depends on the leaf modules **through their Protocols** (`Retriever`,
 `ASRTranscriber`, `Classifier`) and the rules engine — never their concretes.
 

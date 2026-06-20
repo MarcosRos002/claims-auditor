@@ -68,6 +68,7 @@ class AuditOrchestrator:
         clf_findings = self._run_classifier(claim, context, sid, events)
 
         findings = _merge(rules_findings, clf_findings)
+        findings = _ground(findings, context, claim)
         report = AuditReport(
             claim_id=claim.claim_id,
             flagged=bool(findings),
@@ -81,7 +82,9 @@ class AuditOrchestrator:
         if self._retriever is None:
             return []
         t0 = perf_counter()
-        query = " ".join(line.cpt_code for line in claim.lines)
+        query = " ".join(
+            f"{line.cpt_code} {' '.join(line.icd10_codes)}" for line in claim.lines
+        )
         try:
             chunks = self._retriever.retrieve(query)
             events.append(
@@ -156,6 +159,26 @@ def _merge(rules: list[AuditFinding], model: list[AuditFinding]) -> list[AuditFi
         seen.add(key)
         out.append(f)
     return out
+
+
+def _ground(
+    findings: list[AuditFinding], context: list[RetrievedChunk], claim: Claim
+) -> list[AuditFinding]:
+    """Attach retrieved evidence to findings that lack citations (e.g. rule
+    findings). Each finding is grounded in the catalog chunks for the codes on its
+    line — so no inconsistency is asserted without cited evidence."""
+    if not context:
+        return findings
+    grounded: list[AuditFinding] = []
+    for f in findings:
+        if f.citations or f.line_index is None or f.line_index >= len(claim.lines):
+            grounded.append(f)
+            continue
+        line = claim.lines[f.line_index]
+        codes = {line.cpt_code, *line.icd10_codes}
+        cites = [c for c in context if c.chunk_id.split(":", 1)[-1] in codes]
+        grounded.append(f.model_copy(update={"citations": cites}) if cites else f)
+    return grounded
 
 
 def _summarize(findings: list[AuditFinding]) -> str:

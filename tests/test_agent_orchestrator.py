@@ -122,5 +122,36 @@ def test_audit_with_trace_returns_report_and_trace() -> None:
     assert isinstance(trace, Trace)
 
 
+# --------------------------------------------------------------------------- #
+# grounding: findings cite retrieved evidence
+# --------------------------------------------------------------------------- #
+def _catalog_retriever():
+    from claims_auditor.modules.rag.retriever import HybridRetriever
+
+    def emb(text):
+        return [float(len(text) % 7), float(sum(map(ord, text)) % 11), 0.1]
+
+    return HybridRetriever.from_catalog(embedder=emb, top_k=12)
+
+
+def test_rule_findings_are_grounded_with_citations_when_a_retriever_is_present() -> None:
+    lc = generate_claim(seed=10, inject_inconsistency=True, fault_type=FaultType.CPT_ICD_MISMATCH)
+    cpt = lc.claim.lines[lc.faults[0].line_index].cpt_code
+    orch = AuditOrchestrator(RulesEngine(), _classifier([]), retriever=_catalog_retriever())
+
+    report = orch.audit(lc.claim)
+    finding = next(f for f in report.findings if f.category is FaultType.CPT_ICD_MISMATCH)
+    assert finding.citations, "a rule finding must be grounded with retrieved evidence"
+    assert any(cpt in c.chunk_id for c in finding.citations)
+
+
+def test_no_retriever_means_no_citations_on_rule_findings() -> None:
+    lc = generate_claim(seed=10, inject_inconsistency=True, fault_type=FaultType.CPT_ICD_MISMATCH)
+    orch = AuditOrchestrator(RulesEngine(), _classifier([]))  # no retriever
+    report = orch.audit(lc.claim)
+    finding = next(f for f in report.findings if f.category is FaultType.CPT_ICD_MISMATCH)
+    assert finding.citations == []
+
+
 if __name__ == "__main__":  # pragma: no cover
     pytest.main([__file__, "-q"])
