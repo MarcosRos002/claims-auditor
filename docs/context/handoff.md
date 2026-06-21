@@ -59,13 +59,18 @@ Verified it improves top-k ordering with the real model. **70 tests pass.**
 model offline, real faster-whisper by default. Verified a real TTS→ASR round-trip
 (silero → faster-whisper tiny.en transcribes back correctly). **74 tests pass.**
 
+**Guardrails done** (`guardrails/safety.py`): PII/PHI redaction (structured ids;
+clinical codes preserved; idempotent) + prompt-injection detection, with
+`_detailed` variants for metrics. Pinned by `tests/test_guardrails.py`. **82 tests
+pass.** Still to wire: apply redaction at the LLM boundary + injection scan on
+ASR/retrieved text inside the orchestrator (pairs with the model adapter).
+
 Next high-value options:
-1. **transcript → claim extraction** (the audio→audit bridge) — LLM-based, so it
-   pairs with the model adapter; or a heuristic extractor as an interim.
-2. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
-   — the user wants this LAST, after each part is validated online. Unblocks the
-   classifier, the claim extractor, and the voice path (Capa 3).
-3. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
+1. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
+   — the user wants this LAST. Unblocks the classifier, transcript→claim extraction,
+   and the voice path (Capa 3). Wiring guardrails into the prompt path lands here too.
+2. agent-lens dashboards / tracing / analysis.
+3. Start fine-tune-lab (3rd repo).
 
 ### Done in Phase 1 so far
 - **`TraceEvent` reconciled (single source of truth).** The local mirror is gone;

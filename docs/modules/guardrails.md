@@ -5,11 +5,22 @@ Safety layer: PII/PHI redaction and prompt-injection defense. Read-only DB acces
 is enforced at the connection layer in `rag`. Data is synthetic, but guardrails
 are enforced as a discipline and as demoable, senior-signal features.
 
+## Status: implemented (Phase 1)
+Pure, deterministic, idempotent. Pinned by `tests/test_guardrails.py`. Clinical
+codes (CPT/ICD) are preserved; structured PII (NPI, SSN, email, phone, dates,
+patient refs) is masked. Free-text **name** redaction needs NER (Presidio/spaCy)
+and is a documented out-of-scope boundary.
+
 ## Public interface
 `guardrails/safety.py`:
 - `redact_pii(text) -> str` — redact PII/PHI before any LLM sees the text.
+- `redact_pii_detailed(text) -> (str, list[str])` — also returns the categories hit.
 - `scan_for_injection(text) -> bool` — flag prompt-injection attempts in
   retrieved/transcribed content (treat such content as **data**, never instructions).
+- `scan_for_injection_detailed(text) -> (bool, list[str])` — also the matched signatures.
+
+The `_detailed` variants feed `TraceEvent.metadata` (redactions applied,
+injection hits) for agent-lens.
 
 ## Dependencies
 - None at the seam (string-in/string-out). **Upper layer** (Phase 4), but applied
