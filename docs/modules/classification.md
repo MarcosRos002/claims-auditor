@@ -7,11 +7,19 @@ model from fine-tune-lab); low-confidence cases **escalate** to Pass 2 (Claude
 Sonnet `claude-sonnet-4-6`). Covers the judgment the deterministic rules can't
 express.
 
-## Status: implemented (Phase 1)
-Pinned by `tests/test_classification.py`. The model is **injected** so it runs
-offline; `last_pass_used` / `last_escalated` expose the routing decision for
-agent-lens cost metrics. Real model adapter (Anthropic Haiku/Sonnet) is wired in
-the agent/routing layer.
+## Status: implemented (Phase 1) — real model adapter in
+Pinned by `tests/test_classification.py` + `tests/test_classification_models.py`.
+The model is **injected** so it runs offline; `last_pass_used` / `last_escalated`
+expose the routing decision for agent-lens cost metrics.
+
+`modules/classification/models.py` provides three interchangeable `ClassifierModel`
+backends behind the same Protocol: `DemoClassifierModel` (deterministic, offline,
+**$0** — the default), `AnthropicClassifierModel` (real Claude, `tier` → Haiku/
+Sonnet via `routing/`, structured outputs via `messages.parse`, BYOK
+`ANTHROPIC_API_KEY`), and `OpenRouterClassifierModel` (OpenAI-compatible free
+tier, BYOK `OPENROUTER_API_KEY`). `build_classifier_model()` selects one from the
+environment (`VERITAS_DEMO_MODE` / `VERITAS_MODEL_BACKEND` / key presence),
+defaulting to demo so a fresh checkout audits at zero cost.
 
 ## Public interface
 `modules/classification/classifier.py`:
