@@ -54,10 +54,17 @@ the precision pass over fused candidates (scores query/doc pairs jointly), injec
 scorer for offline tests, real sentence-transformers CrossEncoder by default.
 Verified it improves top-k ordering with the real model. **70 tests pass.**
 
+**ASR done (Capa 2, online-verified)** (`modules/asr/transcriber.py`):
+`WhisperTranscriber` maps faster-whisper segments → `TranscriptSegment`s; injected
+model offline, real faster-whisper by default. Verified a real TTS→ASR round-trip
+(silero → faster-whisper tiny.en transcribes back correctly). **74 tests pass.**
+
 Next high-value options:
-1. **`asr`** (Capa 2, multimodal) — audio → claim (faster-whisper, online).
+1. **transcript → claim extraction** (the audio→audit bridge) — LLM-based, so it
+   pairs with the model adapter; or a heuristic extractor as an interim.
 2. **Real model adapter** (Anthropic Haiku/Sonnet + demo-mode/OpenRouter-free/BYOK)
-   — the user wants this LAST, after each part is validated online.
+   — the user wants this LAST, after each part is validated online. Unblocks the
+   classifier, the claim extractor, and the voice path (Capa 3).
 3. agent-lens dashboards / tracing / analysis; or start fine-tune-lab.
 
 ### Done in Phase 1 so far

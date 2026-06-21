@@ -5,12 +5,24 @@ Audio ingestion + streaming transcription. Turns clinical dictation / call
 recordings into time-stamped `TranscriptSegment`s, emitting partials early so the
 agent and the voice UI stay responsive.
 
-## Public interface
-`modules/asr/transcriber.py:WhisperTranscriber` implements `ASRTranscriber`:
-- `transcribe_stream(audio) -> list[TranscriptSegment]`
+## Status: implemented (Phase 1, online-verified)
+Pinned by `tests/test_asr.py` (offline, injected fake Whisper). Verified online
+with real models: a silero-TTS round-trip ("Procedure code nine nine two one
+three, diagnosis E eleven point nine") transcribes back correctly through a real
+faster-whisper `tiny.en`. (silero/omegaconf are demo-only — used to *generate*
+the test audio, not project deps; `faster-whisper` is a core dep.)
 
-(An async/generator streaming variant will likely be added for the voice path —
-coordinate the signature on `main`; see `docs/contracts/protocols.md`.)
+## Public interface
+`modules/asr/transcriber.py`:
+- `WhisperTranscriber(model=None, *, model_name="tiny", language="en")` implements
+  `ASRTranscriber`: `transcribe_stream(audio: bytes) -> list[TranscriptSegment]`.
+- The Whisper model is **injected** (anything with
+  `transcribe(audio, **kw) -> (segments, info)`) so the mapping logic is offline-
+  testable; a real `faster_whisper.WhisperModel` is built by default (lazy import).
+
+Returns final segments today. An async/generator **streaming** variant
+(`is_final=False` partials early) is the planned enhancement for the low-latency
+voice path (Capa 3).
 
 ## Dependencies
 - `contracts` only at the seam.
