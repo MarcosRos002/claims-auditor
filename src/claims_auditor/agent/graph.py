@@ -233,6 +233,21 @@ def build_orchestrator(
     return AuditOrchestrator(RulesEngine(), classifier, retriever=retriever)
 
 
+def build_default_orchestrator(*, retriever: Retriever | None = None) -> AuditOrchestrator:
+    """Construct a ready-to-run orchestrator wired entirely from the environment.
+
+    The classifier model backend is chosen by ``build_classifier_model()``
+    (demo / Anthropic / OpenRouter via env), wrapped in the ``TwoPassClassifier``
+    cost-routing seam. With no API key this defaults to the offline, $0 demo
+    backend, so a fresh checkout audits claims end-to-end for free.
+    """
+    from claims_auditor.modules.classification.classifier import TwoPassClassifier
+    from claims_auditor.modules.classification.models import build_classifier_model
+
+    classifier = TwoPassClassifier(build_classifier_model())
+    return AuditOrchestrator(RulesEngine(), classifier, retriever=retriever)
+
+
 def audit_claim(claim: Claim, *, classifier: Classifier) -> list[AuditFinding]:
     """Convenience: audit a single claim and return just the findings."""
     return build_orchestrator(classifier).audit(claim).findings

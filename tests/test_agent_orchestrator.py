@@ -153,5 +153,39 @@ def test_no_retriever_means_no_citations_on_rule_findings() -> None:
     assert finding.citations == []
 
 
+def test_build_default_orchestrator_uses_demo_model_when_no_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from claims_auditor.agent.graph import build_default_orchestrator
+    from claims_auditor.modules.classification.models import DemoClassifierModel
+
+    for var in ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "VERITAS_MODEL_BACKEND"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.delenv("VERITAS_DEMO_MODE", raising=False)
+
+    orch = build_default_orchestrator()
+    assert isinstance(orch, AuditOrchestrator)
+    assert isinstance(orch._classifier._model, DemoClassifierModel)
+
+
+def test_build_default_orchestrator_audits_an_upcode_claim_end_to_end(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VERITAS_DEMO_MODE", "1")  # force the free, offline backend
+    from claims_auditor.agent.graph import build_default_orchestrator
+    from claims_auditor.contracts import Claim, ClaimLine
+
+    claim = Claim(
+        claim_id="C-UP",
+        patient_ref="P1",
+        provider_npi="1234567890",
+        date_of_service="2026-01-01",
+        lines=[ClaimLine(cpt_code="99214", icd10_codes=["J06.9"])],
+    )
+    report = build_default_orchestrator().audit(claim)
+    assert report.flagged
+    assert any(f.category is FaultType.UPCODING for f in report.findings)
+
+
 if __name__ == "__main__":  # pragma: no cover
     pytest.main([__file__, "-q"])
