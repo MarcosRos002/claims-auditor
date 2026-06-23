@@ -16,6 +16,8 @@ from claims_auditor.modules.classification.classifier import (
 from claims_auditor.modules.classification.models import (
     AnthropicClassifierModel,
     DemoClassifierModel,
+    OpenRouterClassifierModel,
+    _extract_json,
     build_classifier_model,
 )
 from claims_auditor.routing.cost_router import HAIKU, SONNET
@@ -123,6 +125,43 @@ def test_anthropic_returns_parsed_structured_output() -> None:
     assert out.model_dump() == expected.model_dump()
     # structured outputs requested via output_format = the result schema
     assert fake.calls[0]["output_format"] is ClassificationResult
+
+
+# --- OpenRouter adapter (lenient JSON, injected fake client) ----------------
+
+
+class _FakeChatCompletions:
+    def __init__(self, content: str, calls: list[dict]) -> None:
+        self._content = content
+        self._calls = calls
+
+    def create(self, **kwargs: object) -> object:
+        self._calls.append(kwargs)
+        message = type("M", (), {"content": self._content})()
+        choice = type("C", (), {"message": message})()
+        return type("R", (), {"choices": [choice]})()
+
+
+class _FakeOpenAIClient:
+    def __init__(self, content: str) -> None:
+        self.calls: list[dict] = []
+        self.chat = type("Chat", (), {"completions": _FakeChatCompletions(content, self.calls)})()
+
+
+def test_extract_json_handles_fences_and_prose() -> None:
+    assert _extract_json('```json\n{"findings": []}\n```') == '{"findings": []}'
+    assert _extract_json('Sure!\n{"findings": []}\nHope that helps') == '{"findings": []}'
+    assert _extract_json("no json here") == "{}"
+
+
+def test_openrouter_parses_fenced_json_and_does_not_send_response_format() -> None:
+    fenced = '```json\n{"findings": [{"category": "cpt_icd_mismatch", "line_index": 0, "confidence": 0.8, "why": "x"}]}\n```'
+    fake = _FakeOpenAIClient(fenced)
+    model = OpenRouterClassifierModel(client=fake)
+    out = model.classify(_claim("99214"), [], tier="cheap")
+    assert [f.category.value for f in out.findings] == ["cpt_icd_mismatch"]
+    # free models reject response_format — we must not send it
+    assert "response_format" not in fake.calls[0]
 
 
 # --- factory ---------------------------------------------------------------

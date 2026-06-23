@@ -133,10 +133,12 @@ class AnthropicClassifierModel:
 class OpenRouterClassifierModel:
     """OpenAI-compatible classifier over OpenRouter's free tier (BYOK).
 
-    Same tier->model routing; OpenRouter has no native structured-output parse,
-    so we request JSON and validate it into ``ClassificationResult``. The client
-    is injectable for offline tests; otherwise built lazily from the ``openai``
-    SDK pointed at OpenRouter (reading ``OPENROUTER_API_KEY``).
+    Same tier->model routing. Free models are inconsistent about the OpenAI
+    ``response_format`` param (some providers reject it outright), so we don't
+    rely on it: we ask for raw JSON in the prompt and parse it leniently (tolerant
+    of markdown fences / surrounding prose) into ``ClassificationResult``. The
+    client is injectable for offline tests; otherwise built lazily from the
+    ``openai`` SDK pointed at OpenRouter (reading ``OPENROUTER_API_KEY``).
     """
 
     _BASE_URL = "https://openrouter.ai/api/v1"
@@ -159,17 +161,48 @@ class OpenRouterClassifierModel:
     ) -> ClassificationResult:
         client = self._ensure_client()
         schema = json.dumps(ClassificationResult.model_json_schema())
+        system = (
+            f"{_SYSTEM}\n\nReturn ONLY a JSON object matching this schema — no "
+            f"prose, no markdown fences:\n{schema}"
+        )
         completion = client.chat.completions.create(
             model=_OPENROUTER_MODEL_FOR_TIER[tier],
             max_tokens=self._max_tokens,
-            response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": f"{_SYSTEM}\n\nJSON schema:\n{schema}"},
+                {"role": "system", "content": system},
                 {"role": "user", "content": _user_prompt(claim, context)},
             ],
         )
         payload = completion.choices[0].message.content or "{}"
-        return ClassificationResult.model_validate_json(payload)
+        return ClassificationResult.model_validate_json(_extract_json(payload))
+
+
+def _extract_json(text: str) -> str:
+    """Pull the first balanced JSON object out of a model reply.
+
+    Tolerant of ```json fences and surrounding prose that weaker free models add.
+    """
+    text = text.strip()
+    if "```" in text:  # strip a fenced block if present
+        for part in text.split("```"):
+            part = part.lstrip()
+            if part.lower().startswith("json"):
+                part = part[4:].lstrip()
+            if part.startswith("{"):
+                text = part
+                break
+    start = text.find("{")
+    if start == -1:
+        return "{}"
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return text[start:]
 
 
 def build_classifier_model() -> (
